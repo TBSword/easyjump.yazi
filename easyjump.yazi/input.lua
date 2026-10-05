@@ -19,13 +19,13 @@ local function read_single_key(ctx)
     if cand == nil then
       -- invalid key, wait for next
     elseif ctx.input_keys[cand] == "<Esc>" or ctx.input_keys[cand] == "z" then
-      return -- cancelled
+      return false -- cancelled
     else
       local key = ctx.input_keys[cand]
       local file_index = ctx.single_key_files[key]
       if file_index and file_index <= ctx.current_files_count then
         ya.emit("arrow", { file_index - ctx.cursor - 1 + ctx.offset })
-        return -- jumped
+        return true -- jumped
       end
       -- invalid key for current file count, wait for next
     end
@@ -96,8 +96,7 @@ end
 function M.read_input(ctx, update_double_first_key)
   -- Single-key mode: direct jump with one key press
   if ctx.current_files_count <= #ctx.single_labels then
-    read_single_key(ctx)
-    return
+    return read_single_key(ctx)
   end
 
   -- Double-key mode: state machine with explicit transitions
@@ -105,14 +104,16 @@ function M.read_input(ctx, update_double_first_key)
     -- State 1: Wait for first key
     local first_key = read_double_first_key(ctx, update_double_first_key)
     if not first_key then
-      return -- cancelled
+      return false
     end
 
     -- State 2: Wait for second key
     local result =
       read_double_second_key(ctx, first_key, update_double_first_key)
-    if result == "jumped" or result == "cancelled" then
-      return
+    if result == "jumped" then
+      return true
+    elseif result == "cancelled" then
+      return false
     end
     -- result == "backspace": loop back to first key state
   end

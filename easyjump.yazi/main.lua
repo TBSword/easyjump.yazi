@@ -270,7 +270,9 @@ return {
     state.input_cands = build_input_cands(state.input_keys)
   end,
 
-  entry = function(_, _)
+  entry = function(_, jobs)
+    local args = jobs and jobs.args or {}
+    local should_open = args[1] == "open"
     local ctx = init()
 
     if ctx == nil or ctx.current_files_count == 0 then
@@ -278,8 +280,12 @@ return {
     end
 
     toggle_ui()
-    require(".input").read_input(ctx, update_double_first_key)
+    local jumped = require(".input").read_input(ctx, update_double_first_key)
     toggle_ui()
     clear_state()
+
+    if should_open and jumped then
+      ya.emit("plugin", { "wise-enter" })
+    end
   end,
 }
